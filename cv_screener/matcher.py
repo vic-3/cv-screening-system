@@ -390,17 +390,26 @@ def _clean_field(after: str) -> str:
     return s.strip(" .:-–—")[:80]
 
 
+_MAX_DEGREE_MENTIONS = 300      # a real CV has a handful; the cap keeps hostile text fast
+_DEGREE_WINDOW = 300            # characters looked at on each side of a mention
+
+
 def find_degrees(text: str) -> List[DegreeMention]:
     out: List[DegreeMention] = []
     for m in _CV_DEGREE_RE.finditer(text):
+        if len(out) >= _MAX_DEGREE_MENTIONS:
+            break
         level = m.lastgroup
-        ls = text.rfind("\n", 0, m.start()) + 1
-        le = text.find("\n", m.end())
-        le = len(text) if le == -1 else le
+        lo = max(0, m.start() - _DEGREE_WINDOW)
+        nl = text.rfind("\n", lo, m.start())
+        ls = nl + 1 if nl != -1 else lo
+        hi = min(len(text), m.end() + _DEGREE_WINDOW)
+        nl_end = text.find("\n", m.end(), hi)
+        le = nl_end if nl_end != -1 else hi
         fld = _clean_field(text[m.end():le])
         context = re.sub(r"\s+", " ", text[ls:le]).strip()
-        if not fld and le < len(text):                      # field may sit on the next line
-            nxt = text[le + 1:].split("\n", 1)[0].strip()
+        if not fld and nl_end != -1 and nl_end < len(text):          # field may sit on the next line
+            nxt = text[nl_end + 1:nl_end + 1 + 200].split("\n", 1)[0].strip()
             if 0 < len(nxt) < 120:
                 context += " " + re.sub(r"\s+", " ", nxt)
         out.append(DegreeMention(level, LEVEL_RANK[level], m.group(0).strip(),
@@ -449,7 +458,8 @@ def required_rank(text: str) -> Optional[int]:
 
 
 def required_fields(text: str) -> List[str]:
-    t = text.lower()
+    # drop possessives first: "Bachelor's degree" must not leave a stray field called "s"
+    t = re.sub(r"['\u2019]s\b", "", text.lower())
     phrase = None
     m = re.search(r"(?:\bin\b|:)\s*(.+)$", t)
     if m:
@@ -872,6 +882,24 @@ class RegexMatcher:
 # ============================================================================
 
 
+def _coerce_requirement(item: Any, index: int) -> Requirement:
+    """A requirement may arrive as a Requirement, a plain string, a dict, or any object with .name."""
+    if isinstance(item, Requirement):
+        return item
+    if isinstance(item, str):
+        return Requirement(name=item.strip(), id=index)
+    get = item.get if isinstance(item, dict) else (lambda k, d=None: getattr(item, k, d))
+    name = next((get(k) for k in ("name", "skill", "requirement", "text") if get(k) is not None), None)
+    if name is None:                       # an EMPTY name is allowed (reported as "no searchable text")
+        raise RegexMatchError(f"Cannot read a requirement from {item!r}: it needs a name.")
+    mandatory = get("mandatory")
+    return Requirement(name=str(name).strip(),
+                       mandatory=True if mandatory is None else bool(mandatory),
+                       aliases=[str(a) for a in (get("aliases") or [])],
+                       min_years=get("min_years"),
+                       id=get("id") or index)
+
+
 def requirements_from_job(job: JobLike) -> List[Requirement]:
     """
     Turn the shared job object into a list of Requirement.
@@ -890,7 +918,10 @@ def requirements_from_job(job: JobLike) -> List[Requirement]:
     """
     reqs = getattr(job, "requirements", None)
     if reqs:
-        return list(reqs)
+        listed = [_coerce_requirement(r, i) for i, r in enumerate(reqs, start=1)
+                  if not (isinstance(r, str) and not r.strip())]
+        if listed:
+            return listed
 
     def _first(*names):
         for n in names:
