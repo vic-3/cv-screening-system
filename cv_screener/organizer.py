@@ -46,18 +46,10 @@ class OrganizationError(Exception):
 # --------------------------------------------------------------------------
 # Data classes
 # --------------------------------------------------------------------------
-@dataclass
-class MatchResult:
-    """Screening result for a single CV (input from the matching/AI modules)."""
-    file_path: str
-    score: float = 0.0
-    matched: List[str] = field(default_factory=list)
-    missing: List[str] = field(default_factory=list)
-    summary: str = ""
-
-    @property
-    def file_name(self) -> str:
-        return os.path.basename(self.file_path)
+# MatchResult is the shared contract - defined once in models.py so the matcher,
+# ranker and GUI all agree on it. (Same fields as before: file_path, score,
+# matched, missing, summary, plus a .file_name helper.)
+from cv_screener.models import MatchResult
 
 
 @dataclass

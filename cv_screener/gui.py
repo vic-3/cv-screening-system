@@ -21,22 +21,26 @@ demo so you can build and test the window on your own.
 Run it on its own with:   python main.py
 """
 
+import os
 import queue
+import sys
 import threading
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-# Try to import the real pipeline. It may not exist yet (teammates still
-# working), and the import style differs depending on how the app is launched,
-# so we try both and fall back to demo mode if neither works.
+# Make sure the project root is importable so `cv_screener.*` resolves, whether
+# the app is launched as `python main.py` or `python cv_screener/gui.py`.
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+# Import the real pipeline. If it (or one of its dependencies) can't load yet,
+# the GUI falls back to demo mode instead of crashing.
 try:
-    from cv_screener import screener  # launched via `python main.py`
+    from cv_screener import screener
 except Exception:  # noqa: BLE001 - we genuinely want to catch anything here
-    try:
-        import screener  # launched from inside the cv_screener/ folder
-    except Exception:  # noqa: BLE001
-        screener = None
+    screener = None
 
 
 class CVScreenerApp:

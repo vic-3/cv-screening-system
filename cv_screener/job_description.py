@@ -23,20 +23,12 @@ Reuses document_reader.py to read files.
 """
 
 import re
-from dataclasses import dataclass, field
 
 # Reuse the existing document reader
 from document_reader import read_document, clean_text
 
-
-@dataclass
-class JobDescription:
-    """Stores information extracted from a job description."""
-
-    title: str = ""
-    skills: list[str] = field(default_factory=list)
-    years_experience: int = 0
-    education: list[str] = field(default_factory=list)
+# Shared data class - defined once in models.py so every module agrees on it.
+from cv_screener.models import JobDescription
 
 
 def read_job_description(text):

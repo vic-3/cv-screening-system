@@ -1,0 +1,12 @@
+Job Title: Python Backend Developer
+
+We are looking for a Python Backend Developer to join our team.
+
+Requirements:
+- Minimum 3 years of experience
+- Strong skills in Python, SQL and Django
+- Experience building REST APIs
+- BSc in Computer Science or related field
+
+Nice to have:
+- Docker and PostgreSQL experience

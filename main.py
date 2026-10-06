@@ -1,30 +1,22 @@
-from document_reader import read_document, clean_text
+"""Application entry point - run this to start the app.
 
+OWNER: Ojeaga Jeffrey  (System Integration)
 
-def main():
-    file_path = input("Enter the CV file path: ")
+Launches the Tkinter GUI (cv_screener.gui). Run with:
 
-    try:
-        cv_text = read_document(file_path)
-        cv_text = clean_text(cv_text)
-    
+    python main.py
+"""
 
-        print("\n" + "=" * 60)
-        print("EXTRACTED CV TEXT")
-        print("=" * 60)
+import os
+import sys
 
-        print(cv_text)
+# Make sure this folder is on the path so `cv_screener` imports cleanly no
+# matter where the command is run from.
+_ROOT = os.path.dirname(os.path.abspath(__file__))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
-        print("\n" + "=" * 60)
-        print("DOCUMENT INFORMATION")
-        print("=" * 60)
-
-        print(f"Characters: {len(cv_text)}")
-        print(f"Words: {len(cv_text.split())}")
-
-    except Exception as error:
-        print(f"Error: {error}")
-
+from cv_screener.gui import main
 
 if __name__ == "__main__":
     main()
