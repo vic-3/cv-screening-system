@@ -46,3 +46,6 @@ def rank(results: List) -> List:
         result.regex_score = round(regex_score(result), 1)
         result.score = final_score(result)
     return sorted(results, key=lambda r: r.score, reverse=True)
+
+#Ranking contribution by Muhammad:
+scores are kept within the expected 0-100 range.
